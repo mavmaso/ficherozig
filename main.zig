@@ -16,11 +16,13 @@ pub fn main() !void {
     };
     defer file.close();
 
-    while (file.reader().readUntilDelimiterOrEofAlloc(allocator, '\n', std.math.maxInt(usize)) catch |err| {
-        std.log.err("Failed to read line: {s}", .{@errorName(err)});
+    const content = file.readToEndAlloc(allocator, std.math.maxInt(usize)) catch |err| {
+        std.log.err("Failed to read file: {s}", .{@errorName(err)});
         return;
-    }) |line| {
-        defer allocator.free(line);
+    };
+
+    var lines = std.mem.splitScalar(u8, content, '\n');
+    while (lines.next()) |line| {
         std.debug.print("{s}\n", .{line});
     }
 
