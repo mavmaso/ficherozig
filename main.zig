@@ -1,30 +1,42 @@
 const std = @import("std");
-const csv_core = @import("csv_core.zig");
+
+const BUFFER_SIZE = 64 * 1024;
 
 pub fn main() !void {
-    std.debug.print("Running ...\n", .{});
-
-    const path = "0mb.txt";
-
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    const allocator = arena.allocator();
-    defer arena.deinit();
-
-    const file = std.fs.cwd().openFile(path, .{}) catch |err| {
-        std.log.err("Failed to open file: {s}", .{@errorName(err)});
-        return;
-    };
+    const file = try std.fs.cwd().openFile("0mb.txt", .{});
     defer file.close();
 
-    const content = file.readToEndAlloc(allocator, std.math.maxInt(usize)) catch |err| {
-        std.log.err("Failed to read file: {s}", .{@errorName(err)});
-        return;
-    };
+    var io_buf: [BUFFER_SIZE]u8 = undefined;
+    var reader = file.reader(io_buf[0..]);
+    var buffer: [BUFFER_SIZE + 1]u8 = undefined;
+    var start: usize = 0;
 
-    var lines = std.mem.splitScalar(u8, content, '\n');
-    while (lines.next()) |line| {
-        std.debug.print("{s}\n", .{line});
+    while (true) {
+        const n = try reader.interface.readSliceShort(buffer[start..BUFFER_SIZE]);
+
+        if (n == 0) break;
+
+        const end = start + n;
+        var i = start;
+
+        buffer[end] = ','; // sentinel
+
+        while (i < end + 1) {
+            const c = buffer[i];
+            if (c == ',' or c == '\n') {
+                const field = buffer[start..i];
+                std.debug.print("FIELD: {s}\n", .{field});
+                start = i + 1;
+            }
+            i += 1;
+        }
+
+        if (start < end) {
+            const leftover = buffer[start..end];
+            std.mem.copyForwards(u8, buffer[0..leftover.len], leftover);
+            start = leftover.len;
+        } else {
+            start = 0;
+        }
     }
-
-    std.debug.print("Finished\n", .{});
 }
