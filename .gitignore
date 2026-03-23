@@ -1,0 +1,6 @@
+.vscode/
+temp/
+zig-out/
+.zig-cache/
+
+*.txt
