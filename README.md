@@ -12,7 +12,7 @@ The main idea was to parse large files efficiently by reading in fixed-size chun
 
 ## Requirements
 
-- Zig 0.15+
+- Zig 0.16+
 
 ## Setup
 
@@ -24,12 +24,6 @@ zig build
 
 ```sh
 zig build run
-```
-
-Or directly:
-
-```sh
-zig run main.zig
 ```
 
 ## Test
@@ -51,9 +45,9 @@ Example output (20 MB file on Apple Silicon):
 
 ```
 ________________________________________________________
-Executed in    3.70 secs    fish           external
-   usr time    0.26 secs
-   sys time    3.37 secs
+Executed in    5.65 secs    fish           external
+   usr time    0.32 secs  210.00 micros    0.32 secs
+   sys time    5.27 secs  711.00 micros    5.27 secs
 ```
 
 > The bottleneck is I/O (sys time), not CPU (usr time).

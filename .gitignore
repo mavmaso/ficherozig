@@ -4,3 +4,4 @@ zig-out/
 .zig-cache/
 
 *.txt
+output.csv

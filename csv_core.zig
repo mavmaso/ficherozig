@@ -8,19 +8,19 @@ pub const Metadata = struct {
     has_accent: bool,
 };
 
-pub fn parse_data(path: []const u8, metadata: Metadata) !void {
-    const in_file = try std.fs.cwd().openFile(path, .{});
-    defer in_file.close();
+pub fn parse_data(path: []const u8, metadata: Metadata, io: std.Io) !void {
+    const in_file = try std.Io.Dir.cwd().openFile(io, path, .{});
+    defer in_file.close(io);
 
-    const out_file = try std.fs.cwd().createFile(metadata.new_path, .{});
-    defer out_file.close();
+    const out_file = try std.Io.Dir.cwd().createFile(io, metadata.new_path, .{});
+    defer out_file.close(io);
 
     var probe: [1024]u8 = undefined;
-    const first_line = try read_first_line_from_file(in_file, probe[0..]);
+    const first_line = try read_first_line_from_file(in_file, io, probe[0..]);
     const separator = get_separator(first_line);
 
     var io_buf: [BUFFER_SIZE]u8 = undefined;
-    var reader = in_file.reader(io_buf[0..]);
+    var reader = in_file.reader(io, io_buf[0..]);
     var buffer: [BUFFER_SIZE + 1]u8 = undefined;
     var start: usize = 0;
 
@@ -39,11 +39,11 @@ pub fn parse_data(path: []const u8, metadata: Metadata) !void {
 
             if (c == separator or c == '\n') {
                 const field = buffer[start..i];
-                try out_file.writeAll(field);
+                try out_file.writeStreamingAll(io, field);
 
                 if (i != end) {
                     const out_sep = if (c == '\n') "\n" else ";";
-                    try out_file.writeAll(out_sep);
+                    try out_file.writeStreamingAll(io, out_sep);
                 }
 
                 start = i + 1;
@@ -81,11 +81,10 @@ fn get_first_line(line: []const u8) []const u8 {
     return line;
 }
 
-fn read_first_line_from_file(in_file: std.fs.File, probe: []u8) ![]const u8 {
-    const probe_n = try in_file.read(probe);
+fn read_first_line_from_file(in_file: std.Io.File, io: std.Io, probe: []u8) ![]const u8 {
+    const probe_n = try in_file.readPositional(io, &.{probe}, 0);
     const probe_slice = probe[0..probe_n];
     const first_line = get_first_line(probe_slice);
-    try in_file.seekTo(0);
 
     return first_line;
 }
